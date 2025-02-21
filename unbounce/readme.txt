@@ -2,8 +2,8 @@
 Contributors: unbouncewordpress
 Tags: Unbounce, AB testing, A/B testing, split testing, CRO, conversion optimization, wordpress landing page, wp landing pages, splash pages, landing pages, squeeze pages, lead gen, lead generation, email list, responsive landing pages, templates, inbound marketing, ppc, analytics
 Requires at least: 4.1.5
-Tested up to: 6.4
-Stable tag: 1.1.2
+Tested up to: 6.7
+Stable tag: 1.1.3
 Requires PHP: 7.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -102,6 +102,9 @@ You should add a rule to your cache to avoid caching Unbounce Pages which have t
 4. Edit and update all your landing pages from Unbounce’s page builder. They’ll automatically get updated on your WordPress site.
 
 == Changelog ==
+
+= 1.1.3 =
+* Tested with WP 6.7
 
 = 1.1.2 =
 * Eliminates PHP Warnings

@@ -338,7 +338,7 @@ class UBHTTP
     {
         $headers = array(
             'host' => UBConfig::page_server_domain(),
-            'x-ub-wordpress-plugin-version' => '1.1.2'
+            'x-ub-wordpress-plugin-version' => '1.1.3'
         );
 
         try {
