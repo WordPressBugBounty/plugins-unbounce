@@ -7,8 +7,8 @@ class UBConfig
 
     const UB_PLUGIN_NAME           = 'ub-wordpress';
     const UB_CACHE_TIMEOUT_ENV_KEY = 'UB_WP_ROUTES_CACHE_EXP';
-    const UB_USER_AGENT            = 'Unbounce WP Plugin 1.1.3';
-    const UB_VERSION               = '1.1.3';
+    const UB_USER_AGENT            = 'Unbounce WP Plugin 1.1.4';
+    const UB_VERSION               = '1.1.4';
 
     // WP Admin Pages
     const UB_ADMIN_PAGE_MAIN        = 'unbounce-pages';
@@ -313,7 +313,7 @@ class UBConfig
                 return print_r($error, true);
             }, libxml_get_errors());
             // Return what we tried to parse for debugging
-            $errors[] = "XML content: ${string}";
+            $errors[] = "XML content: {$string}";
             libxml_use_internal_errors($use_internal_errors);
             return array(false, $errors);
         }
@@ -386,7 +386,7 @@ class UBConfig
                     } elseif ($routes_status['status'] == 'FAILURE') {
                               UBLogger::warning('Route fetching failed');
                     } else {
-                              UBLogger::warning("Unknown response from route fetcher: '$routes_status'");
+                              UBLogger::warning("Unknown response from route fetcher: '{$routes_status['status']}'");
                     }
 
                     // Creation of domain_info entry
@@ -483,7 +483,7 @@ class UBConfig
                     } elseif ($routes_status['status'] === 'FAILURE' || $routes_status['status'] === 'NONE') {
                         UBLogger::warning('Not updating the dynamic config: Fetching failed or 404 was returned');
                     } else {
-                        UBLogger::warning("Unknown response from dynamic config fetcher: '$routes_status'");
+                        UBLogger::warning("Unknown response from dynamic config fetcher: '{$routes_status['status']}'");
                     }
 
                     $dynamic_config['fetched_at'] = $current_time;
@@ -544,7 +544,7 @@ class UBConfig
 
     private static function process_headers($data, $header_size)
     {
-        $headers = substr($data, 0, $header_size);
+        $headers = $data !== null ? substr($data, 0, $header_size) : '';
         $etag = null;
         $max_age = null;
     
@@ -569,8 +569,6 @@ class UBConfig
         
         return array($etag, $max_age);
     }
-    
-    
 
     public static function fetch_dynamic_config($domain, $etag)
     {
@@ -593,7 +591,14 @@ class UBConfig
 
                 if (json_last_error() == JSON_ERROR_NONE) {
                     UBLogger::debug("Retrieved new dynamic config, HTTP code: '$http_code'");
-                    return UBConfig::create_new_response_dynamic_config($etag, $max_age, $decoded_body['request_header_allow'], $decoded_body['request_header_add'], $decoded_body['request_cookie_allow'], $decoded_body['response_header_allow']);
+                    return UBConfig::create_new_response_dynamic_config(
+                        $etag,
+                        $max_age,
+                        $decoded_body['request_header_allow'] ?? null,
+                        $decoded_body['request_header_add'] ?? null,
+                        $decoded_body['request_cookie_allow'] ?? null,
+                        $decoded_body['response_header_allow'] ?? null
+                    );
                 } else {
                     $failure_message = "An error occurred while processing dynamic config, JSON errors: " . json_last_error_msg();
                     UBLogger::warning($failure_message);

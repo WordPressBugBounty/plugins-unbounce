@@ -158,7 +158,7 @@ class UBHTTP
 
         // Next try to pull it out of the SCRIPT_URI. This is also not always available.
         $script_uri = UBUtil::array_fetch($server_global, 'SCRIPT_URI');
-        $script_uri_scheme = parse_url($script_uri, PHP_URL_SCHEME);
+        $script_uri_scheme = $script_uri !== null ? parse_url($script_uri, PHP_URL_SCHEME) : null;
         if (UBHTTP::is_valid_protocol($script_uri_scheme)) {
             return $script_uri_scheme;
         }
@@ -183,7 +183,7 @@ class UBHTTP
 
         $request_scheme = UBUtil::array_fetch($server_global, 'REQUEST_SCHEME');
         $script_uri = UBUtil::array_fetch($server_global, 'SCRIPT_URI');
-        $script_uri_scheme = parse_url($script_uri, PHP_URL_SCHEME);
+        $script_uri_scheme = $script_uri !== null ? parse_url($script_uri, PHP_URL_SCHEME) : null;
         $https = UBUtil::array_fetch($server_global, 'HTTPS', 'off');
 
         UBLogger::debug_var('UBHTTP::forwarded_proto', $forwarded_proto);
@@ -338,7 +338,7 @@ class UBHTTP
     {
         $headers = array(
             'host' => UBConfig::page_server_domain(),
-            'x-ub-wordpress-plugin-version' => '1.1.3'
+            'x-ub-wordpress-plugin-version' => '1.1.4'
         );
 
         try {

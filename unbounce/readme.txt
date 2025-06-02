@@ -3,8 +3,8 @@ Contributors: unbouncewordpress
 Tags: Unbounce, AB testing, A/B testing, split testing, CRO, conversion optimization, wordpress landing page, wp landing pages, splash pages, landing pages, squeeze pages, lead gen, lead generation, email list, responsive landing pages, templates, inbound marketing, ppc, analytics
 Requires at least: 4.1.5
 Tested up to: 6.7
-Stable tag: 1.1.3
-Requires PHP: 7.2
+Stable tag: 1.1.4
+Requires PHP: 8.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,7 +43,7 @@ Our plugin requires the following setup for the WordPress Server:
 - cURL 7.34.0+
 - OpenSSL 1.0.1+
 
-We recommend at least PHP 7.2.
+We recommend at least PHP 8.0.
 
 1. Create a Wordpress domain in [Unbounce](http://unbounce.com/ "The Mobile Responsive Landing Page Builder for Marketers")
 1. Install this plugin through the WordPress store
@@ -102,6 +102,9 @@ You should add a rule to your cache to avoid caching Unbounce Pages which have t
 4. Edit and update all your landing pages from Unbounce’s page builder. They’ll automatically get updated on your WordPress site.
 
 == Changelog ==
+
+= 1.1.4 =
+* Added support for PHP 8
 
 = 1.1.3 =
 * Tested with WP 6.7

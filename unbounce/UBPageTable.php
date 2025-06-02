@@ -20,7 +20,7 @@ class UBPageTable extends UBWPListTable
     {
         switch ($column_name) {
             case 'url':
-                return "<a href=\"//${item[$column_name]}\" target=\"_blank\">${item[$column_name]}</a>";
+                return "<a href=\"//{$item[$column_name]}\" target=\"_blank\">{$item[$column_name]}</a>";
             break;
             default:
                 return $item[$column_name];

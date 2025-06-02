@@ -50,12 +50,12 @@ class UBUtil
 
     public static function get_flash($cookie_name, $default = null)
     {
-        return UBUtil::array_fetch($_COOKIE, "ub-flash-${cookie_name}", $default);
+        return UBUtil::array_fetch($_COOKIE, "ub-flash-{$cookie_name}", $default);
     }
 
     public static function set_flash($cookie_name, $value)
     {
-        setcookie("ub-flash-${cookie_name}", $value, time() + 60);
+        setcookie("ub-flash-{$cookie_name}", $value, time() + 60);
     }
 
     public static function get_lock()

@@ -5,7 +5,7 @@
   <input type="hidden" name="domain_uuid" />
   <input type="hidden" name="client_id" />
     <?php if (isset($outer_text)) { ?>
-    <?php echo $outer_text; ?>
+        <?php echo $outer_text; ?>
     <?php } ?>
     <?php $style = isset($outer_text) ? 'vertical-align: baseline' : ''; ?>
     <?php
