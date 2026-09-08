@@ -7,10 +7,5 @@
 <p class="description">
     Each line represents an HTTP header sent by Unbounce that is allowed to be forwarded to visitors. In order to forward all headers, set this field to <code>*</code>.
     <strong>Note:</strong> the following headers are always forwarded whether they are listed or not:
-    <?php
-    $headers = array_map(function ($header) {
-        return '<code>'.$header.'</code>';
-    }, get_option(UBConfig::UB_DYNAMIC_CONFIG_CACHE_KEY, array())['response_header_allow']);
-    echo implode(',', array_slice($headers, 0, -1)).' and '.end($headers);
-    ?>
+    <?php echo UBUtil::html_code_sentence_list(UBConfig::always_forwarded_response_headers()); ?>
 </p>

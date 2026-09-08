@@ -1,4 +1,5 @@
 <form method="post" action="<?php echo admin_url('admin-post.php?action=set_unbounce_domains') ?>">
+    <?php wp_nonce_field('ub_set_unbounce_domains'); ?>
   <input type="hidden" name="domains" />
   <input type="hidden" name="user_id" />
   <input type="hidden" name="domain_id" />

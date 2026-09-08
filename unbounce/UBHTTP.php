@@ -295,10 +295,31 @@ class UBHTTP
         }
     }
 
+    /**
+    * The header allow pattern arrives from the remote dynamic config, so it is
+    * untrusted. A non-string is a TypeError in PHP 8, and a malformed pattern
+    * makes preg_match() return false for every header -- silently dropping all
+    * of them. Either would break every proxied request.
+    */
+    public static function is_valid_pattern($pattern)
+    {
+        if (!is_string($pattern) || $pattern === '') {
+            return false;
+        }
+
+        // preg_match() warns and returns false on a malformed pattern.
+        return @preg_match($pattern, '') !== false;
+    }
+
     public static function prepare_request_headers($current_headers, $current_protocol, $domain, $dynamic_config)
     {
         
         $request_header_allow = UBUtil::array_fetch($dynamic_config, 'request_header_allow', UBConfig::UB_DEFAULT_REQUEST_HEADER_ALLOW);
+
+        if (!UBHTTP::is_valid_pattern($request_header_allow)) {
+            UBLogger::warning('Unusable request_header_allow in dynamic config, falling back to the default');
+            $request_header_allow = UBConfig::UB_DEFAULT_REQUEST_HEADER_ALLOW;
+        }
         $request_header_add = UBUtil::array_fetch($dynamic_config, 'request_header_add', UBConfig::UB_DEFAULT_REQUEST_HEADER_ADD);
         $request_cookie_allow = UBUtil::array_fetch($dynamic_config, 'request_cookie_allow', UBConfig::UB_DEFAULT_REQUEST_COOKIE_ALLOW);
 
@@ -338,7 +359,7 @@ class UBHTTP
     {
         $headers = array(
             'host' => UBConfig::page_server_domain(),
-            'x-ub-wordpress-plugin-version' => '1.1.4'
+            'x-ub-wordpress-plugin-version' => '1.1.5'
         );
 
         try {
@@ -591,7 +612,15 @@ class UBHTTP
         }
 
         $allowlist = array_merge($config_headers_forwarded, UBUtil::array_fetch($dynamic_config, 'response_header_allow', array()));
-        $allowlist_regex = '/^('.implode('|', $allowlist).'):/i';
+
+        // Header names are literals, not patterns. Quote them so that a name
+        // containing the delimiter or a metacharacter cannot corrupt the regex
+        // and make preg_match() reject every header.
+        $quoted_allowlist = array_map(function ($header) {
+            return preg_quote((string) $header, '/');
+        }, $allowlist);
+
+        $allowlist_regex = '/^('.implode('|', $quoted_allowlist).'):/i';
         return function ($header) use ($blocklist_regex, $allowlist_regex) {
             return preg_match($allowlist_regex, $header) && !preg_match($blocklist_regex, $header);
         };

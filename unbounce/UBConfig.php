@@ -7,8 +7,8 @@ class UBConfig
 
     const UB_PLUGIN_NAME           = 'ub-wordpress';
     const UB_CACHE_TIMEOUT_ENV_KEY = 'UB_WP_ROUTES_CACHE_EXP';
-    const UB_USER_AGENT            = 'Unbounce WP Plugin 1.1.4';
-    const UB_VERSION               = '1.1.4';
+    const UB_USER_AGENT            = 'Unbounce WP Plugin 1.1.5';
+    const UB_VERSION               = '1.1.5';
 
     // WP Admin Pages
     const UB_ADMIN_PAGE_MAIN        = 'unbounce-pages';
@@ -144,15 +144,34 @@ class UBConfig
         return UBConfig::add_domain_uuid_subdomain($domain);
     }
 
+    /**
+     * Domain UUIDs come from the Unbounce API in canonical 8-4-4-4-12 form and
+     * are used as a single subdomain label, so anything else is rejected.
+     * Without this, a value such as 'evil.example.com/' turns the page server
+     * host into an attacker controlled origin (CVE-2026-81781).
+     */
+    public static function is_valid_domain_uuid($uuid)
+    {
+        return is_string($uuid)
+        && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1;
+    }
+
     private static function add_domain_uuid_subdomain($domain)
     {
         $subdomain = get_option(UBConfig::UB_DOMAIN_UUID_KEY);
-    
-        if ($subdomain) {
-            $domain = $subdomain . '.' . $domain;
+
+        if (!$subdomain) {
+            return $domain;
         }
-    
-        return $domain;
+
+        // Also guards installations that stored a malformed UUID before it was
+        // validated on write.
+        if (!UBConfig::is_valid_domain_uuid($subdomain)) {
+            UBLogger::warning("Ignoring malformed domain UUID '$subdomain'");
+            return $domain;
+        }
+
+        return $subdomain . '.' . $domain;
     }
 
     public static function api_url()
@@ -200,6 +219,70 @@ class UBConfig
         return array(array('status' => 'NEW'), $etag, $max_age, $proxyable_url_set);
     }
 
+    /**
+     * The dynamic config is remote data. Every one of these keys reaches a sink
+     * that assumes a shape: three are array_merge()/array_flip()/foreach
+     * arguments and the fourth is a preg_match() pattern, so a wrong type is a
+     * TypeError on every proxied request. Keys may be absent -- callers fall
+     * back to defaults -- but a present value has to be the right shape.
+     *
+     * Returns null when the body is usable, otherwise a reason for the log and
+     * the Diagnostics page.
+     */
+    public static function dynamic_config_shape_error($decoded_body)
+    {
+        if (!is_array($decoded_body)) {
+            return 'the response body is not an object';
+        }
+
+        foreach (UBConfig::dynamic_config_list_keys() as $key) {
+            if (isset($decoded_body[$key]) && !is_array($decoded_body[$key])) {
+                return "'$key' is not a list";
+            }
+        }
+
+        if (isset($decoded_body['request_header_allow'])
+            && !UBHTTP::is_valid_pattern($decoded_body['request_header_allow'])) {
+            return "'request_header_allow' is not a usable regular expression";
+        }
+
+        return null;
+    }
+
+    public static function dynamic_config_list_keys()
+    {
+        return array('request_header_add', 'request_cookie_allow', 'response_header_allow');
+    }
+
+    /**
+     * Guarantees the shape consumers rely on, whatever is in the cache. The
+     * config is stored in the database, so a value written by a plugin version
+     * that predates validation is still reachable -- the same reason the domain
+     * UUID is checked on read as well as on write. Dropping a bad key makes
+     * callers fall back to their defaults.
+     */
+    public static function sanitize_dynamic_config($dynamic_config)
+    {
+        if (!is_array($dynamic_config)) {
+            return array();
+        }
+
+        foreach (UBConfig::dynamic_config_list_keys() as $key) {
+            if (isset($dynamic_config[$key]) && !is_array($dynamic_config[$key])) {
+                UBLogger::warning("Ignoring malformed '$key' in the cached dynamic config");
+                unset($dynamic_config[$key]);
+            }
+        }
+
+        if (isset($dynamic_config['request_header_allow'])
+            && !UBHTTP::is_valid_pattern($dynamic_config['request_header_allow'])) {
+            UBLogger::warning("Ignoring malformed 'request_header_allow' in the cached dynamic config");
+            unset($dynamic_config['request_header_allow']);
+        }
+
+        return $dynamic_config;
+    }
+
     public static function create_new_response_dynamic_config($etag, $max_age, $request_header_allow, $request_header_add, $request_cookie_allow, $response_header_allow)
     {
         return array(array('status' => 'NEW'), $etag, $max_age, $request_header_allow, $request_header_add, $request_cookie_allow, $response_header_allow);
@@ -230,6 +313,19 @@ class UBConfig
         } else {
             return $host;
         }
+    }
+
+  /**
+   * The headers the page server always forwards, from the remote dynamic
+   * config. Stored as null when that response omits the key, so it can never
+   * be indexed or iterated directly.
+   */
+    public static function always_forwarded_response_headers()
+    {
+        $cached = get_option(UBConfig::UB_DYNAMIC_CONFIG_CACHE_KEY, array());
+        $headers = UBUtil::array_fetch($cached, 'response_header_allow', array());
+
+        return is_array($headers) ? $headers : array();
     }
 
     public static function response_headers_forwarded()
@@ -506,10 +602,10 @@ class UBConfig
             UBLogger::debug('Unlocking: ' . $release_result);
         }
         
-        return UBUtil::array_select_by_key(
+        return UBConfig::sanitize_dynamic_config(UBUtil::array_select_by_key(
             $dynamic_config,
             array('request_header_allow', 'request_header_add', 'request_cookie_allow', 'response_header_allow')
-        );
+        ));
     }
 
     private static function make_curl_request($url, $domain, $etag)
@@ -590,6 +686,14 @@ class UBConfig
                 $decoded_body = json_decode($body, true);
 
                 if (json_last_error() == JSON_ERROR_NONE) {
+                    $shape_error = UBConfig::dynamic_config_shape_error($decoded_body);
+
+                    if ($shape_error !== null) {
+                        $failure_message = "An error occurred while processing dynamic config: $shape_error";
+                        UBLogger::warning($failure_message);
+                        return UBConfig::create_failure_response($failure_message);
+                    }
+
                     UBLogger::debug("Retrieved new dynamic config, HTTP code: '$http_code'");
                     return UBConfig::create_new_response_dynamic_config(
                         $etag,
@@ -641,9 +745,18 @@ class UBConfig
 
     public static function update_authorization_options($domains, $data)
     {
+        $domain_uuid = UBUtil::array_fetch($data, 'domain_uuid', '');
+
+        // An empty UUID is a legitimate state: the domain simply has no UUID
+        // yet, and requests fall back to the un-prefixed page server domain.
+        if ($domain_uuid !== '' && !UBConfig::is_valid_domain_uuid($domain_uuid)) {
+            UBLogger::warning("Refusing to store malformed domain UUID '$domain_uuid'");
+            $domain_uuid = '';
+        }
+
         update_option(UBConfig::UB_USER_ID_KEY, $data['user_id']);
         update_option(UBConfig::UB_DOMAIN_ID_KEY, $data['domain_id']);
-        update_option(UBConfig::UB_DOMAIN_UUID_KEY, $data['domain_uuid']);
+        update_option(UBConfig::UB_DOMAIN_UUID_KEY, $domain_uuid);
         update_option(UBConfig::UB_CLIENT_ID_KEY, $data['client_id']);
         update_option(UBConfig::UB_AUTHORIZED_DOMAINS_KEY, $domains);
         update_option(UBConfig::UB_HAS_AUTHORIZED_KEY, true);

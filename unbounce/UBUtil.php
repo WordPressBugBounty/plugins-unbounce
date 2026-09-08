@@ -102,4 +102,51 @@ class UBUtil
         return isset($get_params['preview'])
         && (isset($get_params['p']) || isset($get_params['page_id']) || isset($get_params['preview_id']));
     }
+
+  /**
+   * Guards an admin_post_* handler.
+   *
+   * wp-admin/admin-post.php dispatches admin_post_{action} for any logged in
+   * user and enforces no capability of its own, so each handler has to check
+   * for itself. Every one of ours changes plugin settings, which the admin
+   * pages already gate behind 'manage_options'.
+   *
+   * Does not return when the request is rejected: both branches end in
+   * wp_die(), matching how WordPress core handles a failed referer check.
+   */
+    public static function verify_admin_request($nonce_action)
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(
+                'You do not have sufficient permissions to manage Unbounce Landing Pages.',
+                'Unbounce Landing Pages',
+                array('response' => 403)
+            );
+        }
+
+        check_admin_referer($nonce_action);
+    }
+
+    /**
+    * Renders a list of values as an escaped, comma separated sentence of <code>
+    * elements, e.g. "<code>a</code>, <code>b</code> and <code>c</code>".
+    */
+    public static function html_code_sentence_list($items)
+    {
+        $items = array_values(array_filter(array_filter((array) $items, 'is_string'), 'strlen'));
+
+        $tagged = array_map(function ($item) {
+            return '<code>' . esc_html($item) . '</code>';
+        }, $items);
+
+        if (count($tagged) === 0) {
+            return 'none';
+        }
+
+        if (count($tagged) === 1) {
+            return $tagged[0];
+        }
+
+        return implode(', ', array_slice($tagged, 0, -1)) . ' and ' . end($tagged);
+    }
 }

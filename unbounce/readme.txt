@@ -3,7 +3,7 @@ Contributors: unbouncewordpress
 Tags: Unbounce, AB testing, A/B testing, split testing, CRO, conversion optimization, wordpress landing page, wp landing pages, splash pages, landing pages, squeeze pages, lead gen, lead generation, email list, responsive landing pages, templates, inbound marketing, ppc, analytics
 Requires at least: 4.1.5
 Tested up to: 6.7
-Stable tag: 1.1.4
+Stable tag: 1.1.5
 Requires PHP: 8.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -102,6 +102,20 @@ You should add a rule to your cache to avoid caching Unbounce Pages which have t
 4. Edit and update all your landing pages from Unbounce’s page builder. They’ll automatically get updated on your WordPress site.
 
 == Changelog ==
+
+= 1.1.5 =
+* **Security**: fixes a broken access control issue (CVE-2026-81781) that allowed any
+  logged-in user, including subscribers, to change the plugin's domain authorization
+  settings. Managing these settings now requires the `manage_options` capability.
+* Hardens handling of data received from Unbounce servers, and escapes the published
+  page list and settings page against unexpected values in it.
+* **Behaviour change**: entries in the "Response Headers Forwarded" setting are now
+  matched as literal header names. They were previously treated as regular expression
+  fragments, so an entry such as `x-unbounce-.*` will stop matching and should be
+  replaced with the full header names it was intended to cover. Setting the field to
+  `*` to forward all headers is unaffected.
+* **Important**: please upgrade to this version as soon as possible. If your site was
+  affected, re-authorize your domain from the Unbounce Pages screen after upgrading.
 
 = 1.1.4 =
 * Added support for PHP 8

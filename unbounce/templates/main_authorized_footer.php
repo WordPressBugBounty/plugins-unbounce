@@ -7,7 +7,8 @@ $refresh_button = get_submit_button('refreshing the Published Pages list', 'seco
 
 <h2 class="ub-need-help-header">Need Help?</h2>
 
-<form method="post" action="<?php $flush_pages_url ?>">
+<form method="post" action="<?php echo $flush_pages_url ?>">
+    <?php wp_nonce_field('ub_flush_unbounce_pages'); ?>
   <input type="hidden" name="action" value="flush_unbounce_pages" />
   <p>
     If your pages are not showing up, first try <?php echo $refresh_button; ?>.
@@ -21,4 +22,4 @@ $refresh_button = get_submit_button('refreshing the Published Pages list', 'seco
 <a class="ub-diagnostics-link" href="<?php echo $diagnostics_url ?>">
   Click here for troubleshooting and plugin diagnostics
 </a>
-<p class="ub-version">Unbounce Version 1.1.4</p>
+<p class="ub-version">Unbounce Version 1.1.5</p>
