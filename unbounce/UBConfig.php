@@ -7,8 +7,8 @@ class UBConfig
 
     const UB_PLUGIN_NAME           = 'ub-wordpress';
     const UB_CACHE_TIMEOUT_ENV_KEY = 'UB_WP_ROUTES_CACHE_EXP';
-    const UB_USER_AGENT            = 'Unbounce WP Plugin 1.1.5';
-    const UB_VERSION               = '1.1.5';
+    const UB_USER_AGENT            = 'Unbounce WP Plugin 1.1.6';
+    const UB_VERSION               = '1.1.6';
 
     // WP Admin Pages
     const UB_ADMIN_PAGE_MAIN        = 'unbounce-pages';
@@ -77,6 +77,9 @@ class UBConfig
             UBConfig::UB_DOMAIN_ID_KEY => '',
             UBConfig::UB_DOMAIN_UUID_KEY => '',
             UBConfig::UB_CLIENT_ID_KEY => '',
+            // Read back by UBDiagnostics::ub_options(), which iterates these
+            // keys rather than naming them, and shown under "Options" in the
+            // diagnostics text support asks customers for.
             UBConfig::UB_PROXY_ERROR_MESSAGE_KEY => '',
             UBConfig::UB_ALLOW_PUBLIC_ADDRESS_X_FORWARDED_FOR => 0,
             UBConfig::UB_USE_CURL_KEY => 1,
@@ -397,7 +400,8 @@ class UBConfig
                         $url = (string) $sitemap_url->loc;
                         // URLs come in with protocol and trailing slash, we need just host and path with no
                         // trailing slash internally.
-                        $urls[] = parse_url($url, PHP_URL_HOST) . rtrim(parse_url($url, PHP_URL_PATH), '/');
+                        $path = (string) parse_url($url, PHP_URL_PATH);
+                        $urls[] = parse_url($url, PHP_URL_HOST) . rtrim($path, '/');
                     }
                 }
             }

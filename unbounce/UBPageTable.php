@@ -1,6 +1,10 @@
 <?php
 
-class UBPageTable extends UBWPListTable
+if (!class_exists('WP_List_Table')) {
+    require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
+}
+
+class UBPageTable extends WP_List_Table
 {
 
     private $item_scroll_threshold = 10;
@@ -14,6 +18,17 @@ class UBPageTable extends UBWPListTable
         }, $page_urls);
 
         $this->_column_headers = array(array('url' => 'Url'), array(), array());
+    }
+
+    /**
+     * Core's WP_List_Table::get_columns() is a die() stub, and since 4.3
+     * get_column_info() reaches it through get_primary_column_name() even when
+     * _column_headers has been set by hand -- so a subclass has to define this.
+     * Public because core registers it as a manage_{screen}_columns callback.
+     */
+    public function get_columns()
+    {
+        return array('url' => 'Url');
     }
 
     protected function column_default($item, $column_name)

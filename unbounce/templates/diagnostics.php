@@ -30,9 +30,9 @@ $permalink_structure = "<p>By default WordPress uses web URLs which have questio
 
                       <p>Please update your <a href=\"{$permalink_url}\" target=\"_blank\">WordPress Permalink Structure</a> (link to: yourdomain.com/wp-admin/options-permalink) and change to anything other than the default WordPress setting.</p>";
 
-$supported_php_version = 'The Unbounce Pages plugin is supported when using PHP version 5.6 or higher, please contact your hosting provider or IT professional and update to a supported version.';
+$supported_php_version = 'The Unbounce Pages plugin is supported when using PHP version 8.0 or higher, please contact your hosting provider or IT professional and update to a supported version.';
 
-$supported_wordpress_version = 'The Unbounce Pages plugin is supported on WordPress versions 4.0 and higher, please contact your hosting provider or IT professional and update to a supported version.';
+$supported_wordpress_version = 'The Unbounce Pages plugin is supported on WordPress versions 4.1.5 and higher, please contact your hosting provider or IT professional and update to a supported version.';
 
 $sni_support = 'The Unbounce Plugin communicates with the Unbounce servers using a TLS 1.2 connection, this requires SNI support in order to function. Our diagnostics indicate that your server does not currently have SNI support.';
 
@@ -119,7 +119,7 @@ $diagnostic_descriptions = array(
     <textarea id="ub-diagnostics-text" rows="10" cols="100">
         <?php
         foreach ($details as $detail_name => $detail) {
-            echo "[${detail_name}] ${detail}\n";
+            echo "[{$detail_name}] {$detail}\n";
         }
         ?>
     </textarea>

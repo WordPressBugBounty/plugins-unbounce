@@ -359,7 +359,7 @@ class UBHTTP
     {
         $headers = array(
             'host' => UBConfig::page_server_domain(),
-            'x-ub-wordpress-plugin-version' => '1.1.5'
+            'x-ub-wordpress-plugin-version' => '1.1.6'
         );
 
         try {
@@ -569,7 +569,9 @@ class UBHTTP
     public static function get_url_purpose($proxyable_url_set, $http_method, $url)
     {
         $host = parse_url($url, PHP_URL_HOST);
-        $path = rtrim(parse_url($url, PHP_URL_PATH), '/');
+        // parse_url() returns null when the URL has no path, and rtrim(null)
+        // is deprecated from PHP 8.1.
+        $path = rtrim((string) parse_url($url, PHP_URL_PATH), '/');
         $url_without_protocol = $host . $path;
 
         UBLogger::debug_var('get_url_purpose $host', $host);

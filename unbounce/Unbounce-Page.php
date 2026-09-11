@@ -3,7 +3,7 @@
 Plugin Name: Unbounce Landing Pages
 Plugin URI: http://unbounce.com
 Description: Unbounce is the most powerful standalone landing page builder available.
-Version: 1.1.5
+Version: 1.1.6
 Author: Unbounce
 Author URI: http://unbounce.com
 License: GPLv2
@@ -16,9 +16,14 @@ require_once dirname(__FILE__) . '/UBConfig.php';
 require_once dirname(__FILE__) . '/UBLogger.php';
 require_once dirname(__FILE__) . '/UBHTTP.php';
 require_once dirname(__FILE__) . '/UBIcon.php';
-require_once dirname(__FILE__) . '/UBWPListTable.php';
-require_once dirname(__FILE__) . '/UBPageTable.php';
 require_once dirname(__FILE__) . '/UBTemplate.php';
+
+// UBPageTable extends WP_List_Table, which lives in wp-admin, so it is only
+// loaded for admin requests. Front end requests proxy pages and never render
+// the published page list.
+if (is_admin()) {
+    require_once dirname(__FILE__) . '/UBPageTable.php';
+}
 
 register_activation_hook(__FILE__, function () {
     UBConfig::set_options_if_not_exist();
@@ -132,7 +137,18 @@ add_action('init', function () {
         );
 
         if ($success === false) {
-              update_option(UBConfig::UB_PROXY_ERROR_MESSAGE_KEY, $message);
+            // Kept because UBDiagnostics::ub_options() reads it back into the
+            // diagnostics dump support asks customers for. It cannot rely on
+            // UBLogger instead: that is a no-op unless UB_ENABLE_LOCAL_LOGGING
+            // is defined in wp-config.php.
+            //
+            // Written with autoload off. This runs on the public proxy path, so
+            // during an upstream outage it is rewritten often -- the message
+            // embeds the request URL, so update_option's unchanged-value
+            // short-circuit rarely applies. Keeping it out of the autoloaded
+            // set means those writes stop invalidating the alloptions cache on
+            // every request.
+            update_option(UBConfig::UB_PROXY_ERROR_MESSAGE_KEY, $message, false);
         }
 
         $end = microtime(true);
@@ -333,9 +349,10 @@ add_action('admin_post_set_unbounce_domains', function () {
 
     UBUtil::set_flash('authorization', $authorization);
 
-    status_header(301);
-    $location = admin_url('admin.php?page='.UBConfig::UB_ADMIN_PAGE_MAIN);
-    header("Location: $location");
+    // 302, not 301: a permanent redirect is cacheable, so a browser could
+    // cache it and stop sending the POST altogether.
+    wp_safe_redirect(admin_url('admin.php?page='.UBConfig::UB_ADMIN_PAGE_MAIN));
+    exit;
 });
 
 add_action('admin_post_flush_unbounce_pages', function () {
@@ -343,8 +360,8 @@ add_action('admin_post_flush_unbounce_pages', function () {
 
     $domain = UBConfig::domain();
     // Expire cache and redirect
-    $_domain_info = UBConfig::read_unbounce_domain_info($domain, true);
-    status_header(301);
-    $location = admin_url('admin.php?page='.UBConfig::UB_ADMIN_PAGE_MAIN);
-    header("Location: $location");
+    UBConfig::read_unbounce_domain_info($domain, true);
+
+    wp_safe_redirect(admin_url('admin.php?page='.UBConfig::UB_ADMIN_PAGE_MAIN));
+    exit;
 });

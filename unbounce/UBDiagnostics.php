@@ -2,8 +2,22 @@
 
 class UBDiagnostics
 {
-    const SUPPORTED_PHP_VERSION = '5.3';
-    const SUPPORTED_WP_VERSION = '4.0';
+    // Keep these in step with "Requires PHP" and "Requires at least" in
+    // readme.txt, and with the explanatory text in templates/diagnostics.php.
+    //
+    // Both floors are below anything CI exercises: PHP 8.0 went end of life in
+    // November 2023 and the matrix starts at 8.2, and WordPress 4.1.5 is from
+    // 2016. That is deliberate, not an oversight.
+    //
+    // WordPress uses "Requires PHP" and "Requires at least" to gate update
+    // delivery as well as installation, so raising either stops the sites below
+    // it being offered plugin updates at all -- including a future security
+    // fix. The sites most likely to be on an end of life runtime are the least
+    // likely to be maintained, so cutting off their update path is how a fixed
+    // vulnerability stays unfixed in the wild. Raising these is a product
+    // decision that wants install numbers behind it, not a tidy-up.
+    const SUPPORTED_PHP_VERSION = '8.0';
+    const SUPPORTED_WP_VERSION = '4.1.5';
 
     public static function checks($domain, $domain_info)
     {
@@ -113,7 +127,7 @@ class UBDiagnostics
         return array(
         'PHP Version'             => phpversion(),
         'WordPress Version'       => UBDiagnostics::wordpress_version(),
-        'Unbounce Plugin Version' => '1.1.5',
+        'Unbounce Plugin Version' => '1.1.6',
         'Checks'                  => self::pp(UBDiagnostics::checks($domain, $domain_info)),
         'Options'                 => self::pp(UBDiagnostics::ub_options()),
         'Permalink Structure'     => get_option('permalink_structure', ''),
@@ -191,7 +205,7 @@ class UBDiagnostics
         return array(
             'php'                 => phpversion(),
             'wordpress'           => UBDiagnostics::wordpress_version(),
-            'plugin_version'      => '1.1.5',
+            'plugin_version'      => '1.1.6',
             'curl_installed'      => self::is_curl_installed(),
             'xml_installed'       => self::is_xml_installed(),
             'sni_support'         => self::has_sni(),
