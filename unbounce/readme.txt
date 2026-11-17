@@ -3,7 +3,7 @@ Contributors: unbouncewordpress
 Tags: Unbounce, AB testing, A/B testing, split testing, CRO, conversion optimization, wordpress landing page, wp landing pages, splash pages, landing pages, squeeze pages, lead gen, lead generation, email list, responsive landing pages, templates, inbound marketing, ppc, analytics
 Requires at least: 4.1.5
 Tested up to: 7.1
-Stable tag: 1.1.6
+Stable tag: 1.1.7
 Requires PHP: 8.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -102,6 +102,17 @@ You should add a rule to your cache to avoid caching Unbounce Pages which have t
 4. Edit and update all your landing pages from Unbounce’s page builder. They’ll automatically get updated on your WordPress site.
 
 == Changelog ==
+
+= 1.1.7 =
+* **Security**: fixes a cross-site scripting issue (CVE-2026-125854). When a request
+  to Unbounce's servers failed, the plugin stored the requested URL and showed it
+  unescaped on the Diagnostics page, so text added to a page address by a visitor
+  could run as script when an administrator opened that page. The Diagnostics page
+  now escapes everything it shows, the stored error no longer includes the URL's
+  query string, and an error stored by an earlier version is cleared on upgrade.
+* Escapes the domain name and other values shown on the plugin's admin pages.
+* No longer forwards a request whose address is not a plain path. Some web servers,
+  including Apache, pass such requests to WordPress.
 
 = 1.1.6 =
 * Tested with WordPress 7.1

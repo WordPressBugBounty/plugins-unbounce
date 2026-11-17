@@ -127,7 +127,7 @@ class UBDiagnostics
         return array(
         'PHP Version'             => phpversion(),
         'WordPress Version'       => UBDiagnostics::wordpress_version(),
-        'Unbounce Plugin Version' => '1.1.6',
+        'Unbounce Plugin Version' => '1.1.7',
         'Checks'                  => self::pp(UBDiagnostics::checks($domain, $domain_info)),
         'Options'                 => self::pp(UBDiagnostics::ub_options()),
         'Permalink Structure'     => get_option('permalink_structure', ''),
@@ -205,7 +205,7 @@ class UBDiagnostics
         return array(
             'php'                 => phpversion(),
             'wordpress'           => UBDiagnostics::wordpress_version(),
-            'plugin_version'      => '1.1.6',
+            'plugin_version'      => '1.1.7',
             'curl_installed'      => self::is_curl_installed(),
             'xml_installed'       => self::is_xml_installed(),
             'sni_support'         => self::has_sni(),

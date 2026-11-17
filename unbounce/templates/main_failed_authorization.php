@@ -1,10 +1,10 @@
 <div class="error">
-  <p>It looks like <strong><?php echo $domain; ?></strong> has not been added as a WordPress domain
+  <p>It looks like <strong><?php echo esc_html($domain); ?></strong> has not been added as a WordPress domain
     in your Unbounce account.</p>
 </div>
 
 <form method="get" action="https://app.unbounce.com/add_wordpress_domain" target="_blank">
-  <input type="hidden" name="domain_name" value="<?php echo $domain; ?>" />
+  <input type="hidden" name="domain_name" value="<?php echo esc_attr($domain); ?>" />
     <?php
 
     get_submit_Button(

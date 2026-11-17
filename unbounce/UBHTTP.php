@@ -59,11 +59,7 @@ class UBHTTP
         $join_cookie_values = function ($k, $v) {
             return $k . '=' . $v;
         };
-        $cookie_strings = array_map(
-            $join_cookie_values,
-            array_keys($cookies),
-            $cookies
-        );
+        $cookie_strings = array_map($join_cookie_values, array_keys($cookies), $cookies);
         return join('; ', $cookie_strings);
     }
 
@@ -171,15 +167,8 @@ class UBHTTP
     public static function determine_protocol($server_global, $wp_is_ssl)
     {
         $forwarded_proto = UBUtil::array_fetch($server_global, 'HTTP_X_FORWARDED_PROTO');
-        $first_valid_forwarded_proto = UBUtil::array_fetch(
-            array_values(
-                array_filter(
-                    UBHTTP::split_header_values($forwarded_proto),
-                    array('UBHTTP', 'is_valid_protocol')
-                )
-            ),
-            0
-        );
+        $valid_forwarded_protos = array_filter(UBHTTP::split_header_values($forwarded_proto), array('UBHTTP', 'is_valid_protocol'));
+        $first_valid_forwarded_proto = UBUtil::array_fetch(array_values($valid_forwarded_protos), 0);
 
         $request_scheme = UBUtil::array_fetch($server_global, 'REQUEST_SCHEME');
         $script_uri = UBUtil::array_fetch($server_global, 'SCRIPT_URI');
@@ -282,7 +271,7 @@ class UBHTTP
 
         $resp = wp_remote_request($target_url, $args);
         if (is_wp_error($resp)) {
-            $message = "Error proxying to '" . $target_url . "': " . $resp->get_error_message();
+            $message = UBHTTP::proxy_error_message($target_url, $resp->get_error_message());
             UBLogger::warning($message);
             http_response_code(500);
             return array(false, $message);
@@ -359,7 +348,7 @@ class UBHTTP
     {
         $headers = array(
             'host' => UBConfig::page_server_domain(),
-            'x-ub-wordpress-plugin-version' => '1.1.6'
+            'x-ub-wordpress-plugin-version' => '1.1.7'
         );
 
         try {
@@ -479,7 +468,10 @@ class UBHTTP
         curl_setopt_array($curl, $curl_options);
         $resp = curl_exec($curl);
         if (!$resp) {
-            $message = "Error proxying to '" . $target_url . "': " . curl_error($curl) . " - Code: " . curl_errno($curl);
+            $message = UBHTTP::proxy_error_message(
+                $target_url,
+                curl_error($curl) . " - Code: " . curl_errno($curl)
+            );
             UBLogger::warning($message);
             if (UBHTTP::is_location_response_header_set()) {
                 UBLogger::debug("The location header was set despite the cURL error. Assuming it's safe to let the response flow back");
@@ -564,6 +556,45 @@ class UBHTTP
             1,
             $url_without_protocol
         );
+    }
+
+    /**
+     * The message for a failed proxy request. It is stored in the
+     * ub-proxy-error-message option and shown on the Diagnostics page, so it
+     * must not carry the visitor's query string: the target URL is the page
+     * server plus the raw REQUEST_URI, and an anonymous visitor controls the
+     * query string, so markup placed there was stored and then ran in the
+     * admin's session when they opened Diagnostics (BD-13834).
+     *
+     * The path is kept because it says which page failed, which is what
+     * support uses the message for. The Diagnostics page escapes it on output
+     * anyway; dropping the query string means the most convenient place to
+     * put a payload is never stored.
+     *
+     * Control characters and non-ASCII bytes in the path are percent-encoded.
+     * REQUEST_URI is raw, so a visitor can send a byte that is not valid
+     * UTF-8, and esc_textarea() returns '' for invalid UTF-8, which would
+     * blank the whole Options entry on the Diagnostics page.
+     */
+    public static function proxy_error_message($target_url, $detail)
+    {
+        $url_without_query = preg_replace('/[?#].*$/s', '', (string) $target_url);
+        $percent_encode = function ($byte) {
+            return rawurlencode($byte[0]);
+        };
+        $printable_url = preg_replace_callback('/[\x00-\x20\x7F-\xFF]/', $percent_encode, $url_without_query);
+        return "Error proxying to '" . $printable_url . "': " . $detail;
+    }
+
+    /**
+     * True when a request target is an origin-form path ("/..."), the only form
+     * the proxy can safely append to the page-server URL. Absolute-form
+     * ("http:/...", "http://host/...") and anything else would be read by curl
+     * as part of the host or scheme.
+     */
+    public static function is_origin_form_path($request_uri)
+    {
+        return is_string($request_uri) && strpos($request_uri, '/') === 0 && strpos($request_uri, '//') !== 0;
     }
 
     public static function get_url_purpose($proxyable_url_set, $http_method, $url)

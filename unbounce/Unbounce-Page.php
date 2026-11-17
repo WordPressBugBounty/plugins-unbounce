@@ -3,7 +3,7 @@
 Plugin Name: Unbounce Landing Pages
 Plugin URI: http://unbounce.com
 Description: Unbounce is the most powerful standalone landing page builder available.
-Version: 1.1.6
+Version: 1.1.7
 Author: Unbounce
 Author URI: http://unbounce.com
 License: GPLv2
@@ -55,6 +55,16 @@ add_action('init', function () {
     $current_protocol = UBHTTP::get_current_protocol($_SERVER, is_ssl());
     $current_method = UBUtil::array_fetch($_SERVER, 'REQUEST_METHOD');
     $current_path = UBUtil::array_fetch($_SERVER, 'REQUEST_URI');
+
+    // The target URL is the page server plus this path, so it has to be a path.
+    // Apache accepts a request target such as "http:/_ub/x", which turned the
+    // page-server host into "proxy.unbouncepages.comhttp" and let any visitor
+    // force a failed proxy call carrying their markup (BD-13834).
+    if (!UBHTTP::is_origin_form_path($current_path)) {
+        UBLogger::debug("ignoring request target that is not a path: " . var_export($current_path, true));
+        return;
+    }
+
     $current_url  = $current_protocol . '://' . $domain . $current_path;
     $current_user_agent = UBUtil::array_fetch($_SERVER, 'HTTP_USER_AGENT');
 
@@ -172,6 +182,14 @@ add_action('admin_init', function () {
         // When upgrading to 1.1.x from a 1.0.x version, override all previous ub-page-server-domain values to new default
         if (version_compare($saved_version, '1.1.0', '<')) {
             update_option(UBConfig::UB_PAGE_SERVER_DOMAIN_KEY, UBConfig::default_page_server_domain());
+        }
+
+        // Before 1.1.7 the stored proxy error kept the visitor's query string,
+        // which could carry markup into the Diagnostics page (BD-13834). The
+        // page now escapes it, but there is no reason to keep text an
+        // anonymous visitor chose, so installs upgrading past the fix drop it.
+        if (version_compare($saved_version, '1.1.7', '<')) {
+            update_option(UBConfig::UB_PROXY_ERROR_MESSAGE_KEY, '', false);
         }
     }
 

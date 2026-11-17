@@ -7,8 +7,8 @@ class UBConfig
 
     const UB_PLUGIN_NAME           = 'ub-wordpress';
     const UB_CACHE_TIMEOUT_ENV_KEY = 'UB_WP_ROUTES_CACHE_EXP';
-    const UB_USER_AGENT            = 'Unbounce WP Plugin 1.1.6';
-    const UB_VERSION               = '1.1.6';
+    const UB_USER_AGENT            = 'Unbounce WP Plugin 1.1.7';
+    const UB_VERSION               = '1.1.7';
 
     // WP Admin Pages
     const UB_ADMIN_PAGE_MAIN        = 'unbounce-pages';

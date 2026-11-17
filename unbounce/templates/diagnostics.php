@@ -1,6 +1,6 @@
 <?php
 
-$domain_is_authorized = "<p>The plugin is not able to verify that your domain ({$domain}) is added to your account in Unbounce.</p>
+$domain_is_authorized = "<p>The plugin is not able to verify that your domain (" . esc_html($domain) . ") is added to your account in Unbounce.</p>
                       <p>Possible causes:</p>
                       <ul class=\"causes\">
                       <li>Log in & out of Unbounce. It s possible that your session has expired</li>
@@ -28,7 +28,7 @@ $xml_support = '<p>The Unbounce Plugin requires that the php-xml extension be in
 
 $permalink_structure = "<p>By default WordPress uses web URLs which have question marks and lots of numbers in them; however, this default structure will not work with the Unbounce Plugin. </p>
 
-                      <p>Please update your <a href=\"{$permalink_url}\" target=\"_blank\">WordPress Permalink Structure</a> (link to: yourdomain.com/wp-admin/options-permalink) and change to anything other than the default WordPress setting.</p>";
+                      <p>Please update your <a href=\"" . esc_url($permalink_url) . "\" target=\"_blank\">WordPress Permalink Structure</a> (link to: yourdomain.com/wp-admin/options-permalink) and change to anything other than the default WordPress setting.</p>";
 
 $supported_php_version = 'The Unbounce Pages plugin is supported when using PHP version 8.0 or higher, please contact your hosting provider or IT professional and update to a supported version.';
 
@@ -53,6 +53,16 @@ $diagnostic_descriptions = array(
     "Domain UUID" => $domain_uuid,
 );
 
+// The descriptions are markup written here, with the only variables escaped
+// where they are interpolated above. wp_kses is the second layer, limited to the
+// tags they actually use rather than everything a post may contain.
+$description_allowed_html = array(
+    'p' => array(),
+    'ul' => array('class' => true),
+    'li' => array(),
+    'a' => array('href' => true, 'target' => true),
+);
+
 ?>
 
 <div class="wrap">
@@ -63,12 +73,14 @@ $diagnostic_descriptions = array(
             <li>
                 <span class='dashicons <?php echo $css_class; ?>'></span>
                 <?php
-                echo $check;
+                echo esc_html($check);
 
                 if (!$success) {
                     foreach ($diagnostic_descriptions as $title => $description) {
                         if ($title == $check) {
-                            echo '<p class="ub-diagnostics-check-description">' . $description . '</p>';
+                            echo '<p class="ub-diagnostics-check-description">'
+                                . wp_kses($description, $description_allowed_html)
+                                . '</p>';
                         }
                     }
                 }
@@ -119,7 +131,13 @@ $diagnostic_descriptions = array(
     <textarea id="ub-diagnostics-text" rows="10" cols="100">
         <?php
         foreach ($details as $detail_name => $detail) {
-            echo "[{$detail_name}] {$detail}\n";
+            // Every value is escaped: the dump includes stored options, one of
+            // which (ub-proxy-error-message) is written from public proxy
+            // traffic, and other plugins' header text. A "</textarea>" in any
+            // of them would otherwise end the textarea and inject markup.
+            // Escaping on output also neutralises a value stored before this
+            // fix.
+            echo esc_textarea("[{$detail_name}] {$detail}\n");
         }
         ?>
     </textarea>
